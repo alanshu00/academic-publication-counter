@@ -120,13 +120,6 @@ export default function Home() {
             <p className="last-checked">Last checked {new Date(data.lastChecked).toLocaleString()} · Data source: DBLP</p>
           </section>
         )}
-        <section id="about" className="about-section">
-          <div className="about-icon"><Info size={22} /></div>
-          <div><p className="eyebrow">Methodology</p><h2>About this tool</h2></div>
-          <p>This tool retrieves bibliographic metadata from DBLP and calculates journal, conference/workshop, and first-author publications within your selected years.</p>
-          <p><strong>Classification:</strong> DBLP <code>article</code> records count as journals; <code>inproceedings</code> records count as conferences. First author means the scholar appears first in DBLP&apos;s author list.</p>
-          <p className="coverage-note">DBLP primarily covers computer science and related fields. Results may not represent a scholar&apos;s complete publication record outside DBLP&apos;s coverage.</p>
-        </section>
       </div>
       <footer><span><BookMarked size={16} /> Academic Publication Counter</span><span>Data provided by <a href="https://dblp.org" target="_blank" rel="noreferrer">DBLP</a>.</span></footer>
     </main>
