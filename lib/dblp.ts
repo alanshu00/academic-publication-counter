@@ -13,42 +13,11 @@ import {
   findSelectedScholarAuthorIndex,
   getIdentityMatch,
 } from "@/lib/scholar-identity";
+import { fetchDblpWithFallback } from "@/lib/dblp-fetch";
 
 const DBLP_BASE = "https://dblp.org";
-const REQUEST_TIMEOUT_MS = 12_000;
 
 type JsonRecord = Record<string, unknown>;
-
-async function dblpFetch(url: string, cache: RequestCache = "force-cache"): Promise<Response> {
-  const headers = {
-    Accept: "application/json, application/xml, text/xml;q=0.9, */*;q=0.8",
-    "User-Agent": "AcademicPublicationCounter/1.0 (educational tool)",
-  };
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const response = await fetch(url, {
-        headers,
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        ...(cache === "no-store" ? { cache } : { next: { revalidate: 3600 } }),
-      });
-      if (process.env.NODE_ENV === "development") {
-        console.log("[DBLP] upstream status:", response.status);
-      }
-      if (response.ok) return response;
-      if (response.status < 500 && response.status !== 429) {
-        throw new Error(`DBLP returned HTTP ${response.status}`);
-      }
-      lastError = new Error(`DBLP returned HTTP ${response.status}`);
-    } catch (error) {
-      lastError = error;
-    }
-    if (attempt === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error("Unable to connect to DBLP");
-}
 
 function stringList(value: unknown): string[] {
   if (value === undefined || value === null) return [];
@@ -64,12 +33,15 @@ function stringList(value: unknown): string[] {
 }
 
 export async function searchAuthors(name: string): Promise<Scholar[]> {
-  const url = new URL(`${DBLP_BASE}/search/author/api`);
-  url.searchParams.set("q", name.trim());
-  url.searchParams.set("format", "json");
-  url.searchParams.set("h", "10");
-  // Search behavior is now verified; cache repeated lookups to respect DBLP.
-  const response = await dblpFetch(url.toString());
+  const params = new URLSearchParams({
+    q: name.trim(),
+    format: "json",
+    h: "10",
+  });
+  const { response } = await fetchDblpWithFallback(`/search/author/api?${params.toString()}`, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
   const data = (await response.json()) as JsonRecord;
   const result = data.result as JsonRecord | undefined;
   const hits = result?.hits as JsonRecord | undefined;
@@ -232,6 +204,9 @@ export function parsePersonXml(xml: string, scholar: Scholar, from: number, to: 
 export async function getPublications(scholar: Scholar, from: number, to: number) {
   if (!scholar.pid) throw new Error("A DBLP PID is required for publication analysis");
   const pidPath = scholar.pid.split("/").map(encodeURIComponent).join("/");
-  const response = await dblpFetch(`${DBLP_BASE}/pid/${pidPath}.xml`);
+  const { response } = await fetchDblpWithFallback(`/pid/${pidPath}.xml`, {
+    headers: { Accept: "application/xml,text/xml" },
+    cache: "no-store",
+  });
   return parsePersonXml(await response.text(), scholar, from, to);
 }

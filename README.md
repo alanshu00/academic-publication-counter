@@ -53,7 +53,7 @@ npm run test:e2e
 - The Excel workbook includes an `Audit` worksheet with counted and excluded records.
 - `lib/export-excel.ts` creates Summary and Publications worksheets with SheetJS.
 
-External DBLP requests use a 12-second timeout, retry at most once, and cache for one hour. The browser never calls DBLP directly, avoiding CORS issues. The application contains no production mock data.
+External DBLP requests run in the Node.js server runtime, use an 8-second timeout per host, retry a rate-limited host at most once, and fall back across the official DBLP hosts. Requests temporarily use `no-store` caching while production connectivity is diagnosed. The browser never calls DBLP directly, avoiding CORS issues. The application contains no production mock data.
 
 ## Deploy to Vercel
 

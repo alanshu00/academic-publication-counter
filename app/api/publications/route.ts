@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublications } from "@/lib/dblp";
+import { DblpUpstreamError } from "@/lib/dblp-fetch";
 import { calculateStats, publicationCountsByYear } from "@/lib/publications";
 import type { Scholar } from "@/types";
+
+export const runtime = "nodejs";
 
 function validYear(value: string | null): number | null {
   const year = Number(value);
@@ -57,9 +60,28 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error(`DBLP publication fetch failed for PID ${pid}:`, error);
+    if (!(error instanceof DblpUpstreamError)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to retrieve or parse DBLP publications. Please try again.",
+          ...(process.env.NODE_ENV !== "production" && {
+            details: { name: error instanceof Error ? error.name : "UnknownError", message: String(error) },
+          }),
+        },
+        { status: 502 },
+      );
+    }
     return NextResponse.json(
-      { success: false, error: "Unable to retrieve or parse DBLP publications. Please try again." },
-      { status: 502 },
+      {
+        success: false,
+        error: "DBLP is temporarily unavailable.",
+        debugCode: "DBLP_UPSTREAM_UNAVAILABLE",
+        ...(process.env.NODE_ENV !== "production" && {
+          details: { attempts: error.attempts },
+        }),
+      },
+      { status: 503 },
     );
   }
 }
