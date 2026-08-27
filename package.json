@@ -9,11 +9,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:integration": "set \"RUN_DBLP_INTEGRATION=1\" && playwright test --grep \"search API\""
+    "test:integration": "set \"RUN_DBLP_INTEGRATION=1\" && playwright test --grep \"live browser integration\""
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.14",
-    "fast-xml-parser": "^5.3.1",
     "lucide-react": "^0.544.0",
     "next": "^16.0.0",
     "react": "^19.2.0",

@@ -8,7 +8,12 @@ import StatsCards from "@/components/StatsCards";
 import PublicationAuditView from "@/components/PublicationAuditView";
 import CountValidation from "@/components/CountValidation";
 import ExportButton from "@/components/ExportButton";
-import type { ApiError, PublicationsResponse, Scholar } from "@/types";
+import {
+  dblpClientErrorMessage,
+  searchDblpAuthors,
+  searchDblpPublications,
+} from "@/lib/dblp-client";
+import type { PublicationsResponse, Scholar } from "@/types";
 
 const currentYear = new Date().getFullYear();
 
@@ -43,27 +48,15 @@ export default function Home() {
       if (process.env.NODE_ENV === "development") {
         console.log("[Scholar Search] submitting", { name: name.trim(), fromYear: from, toYear: to });
       }
-      const response = await fetch(`/api/search-author?name=${encodeURIComponent(name.trim())}`);
-      const result = await response.json().catch(() => null) as
-        | { success: true; scholars: Scholar[] }
-        | ApiError
-        | null;
-      if (!response.ok) {
-        throw new Error(result && !result.success ? result.error : `Search failed (${response.status})`);
-      }
-      if (!result) throw new Error("DBLP returned an invalid response.");
-      if (!result.success) throw new Error(result.error);
+      const result = await searchDblpAuthors(name.trim());
       if (process.env.NODE_ENV === "development") {
-        console.log("[Scholar Search] response", { status: response.status, candidates: result.scholars.length });
+        console.log("[Scholar Search] response", { candidates: result.length });
       }
-      if (!result.scholars.length) setError("No scholar found on DBLP.");
-      else setScholars(result.scholars);
+      if (!result.length) setError("No scholar found on DBLP.");
+      else setScholars(result);
     } catch (caught) {
       console.error("[Scholar Search] failed", caught);
-      const message = caught instanceof Error ? caught.message : "";
-      setError(message && message !== "Failed to fetch"
-        ? message
-        : "Unable to search DBLP. Please try again.");
+      setError(dblpClientErrorMessage(caught));
     } finally { setSearching(false); }
   }
 
@@ -74,18 +67,10 @@ export default function Home() {
     }
     setError(""); setLoadingPid(scholar.pid);
     try {
-      const params = new URLSearchParams({ pid: scholar.pid, name: scholar.name, from: String(from), to: String(to) });
-      scholar.aliases?.forEach((alias) => params.append("alias", alias));
-      const response = await fetch(`/api/publications?${params}`);
-      const result = await response.json().catch(() => null) as PublicationsResponse | ApiError | null;
-      if (!response.ok) {
-        throw new Error(result && !result.success ? result.error : `Publication analysis failed (${response.status})`);
-      }
-      if (!result) throw new Error("DBLP returned an invalid response.");
-      if (!result.success) throw new Error(result.error);
+      const result = await searchDblpPublications(scholar, from, to);
       setData(result);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to retrieve publications.");
+      setError(dblpClientErrorMessage(caught));
     } finally { setLoadingPid(undefined); }
   }
 

@@ -62,7 +62,7 @@ export function normalizeDoi(doi?: string): string | undefined {
   return normalized || undefined;
 }
 
-function decodeHtmlEntities(value: string): string {
+export function decodeHtmlEntities(value: string): string {
   const named: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " };
   let result = value;
   for (let pass = 0; pass < 2; pass += 1) {
