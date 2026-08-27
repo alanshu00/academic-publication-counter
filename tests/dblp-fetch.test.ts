@@ -14,8 +14,12 @@ describe("fetchDblpWithFallback", () => {
   });
 
   it("falls back to the next host when fetch throws", async () => {
+    const cause = Object.assign(new Error("Connect Timeout Error"), {
+      name: "ConnectTimeoutError",
+      code: "UND_ERR_CONNECT_TIMEOUT",
+    });
     const fetchMock = vi.fn()
-      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockRejectedValueOnce(new TypeError("fetch failed", { cause }))
       .mockResolvedValueOnce(new Response("ok", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -34,6 +38,12 @@ describe("fetchDblpWithFallback", () => {
     expect(headers.get("Accept")).toBe("application/json");
     expect(headers.get("User-Agent")).toBe("Academic-Publication-Counter/1.0");
     expect(headers.get("Accept-Language")).toBe("en-US,en;q=0.9");
+    expect(console.error).toHaveBeenCalledWith("[DBLP]", expect.objectContaining({
+      errorName: "TypeError",
+      errorMessage: "fetch failed",
+      causeName: "ConnectTimeoutError",
+      causeCode: "UND_ERR_CONNECT_TIMEOUT",
+    }));
   });
 
   it("retries a rate-limited host only once before succeeding", async () => {

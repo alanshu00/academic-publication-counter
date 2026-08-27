@@ -23,6 +23,10 @@ export interface DblpAttemptDetails {
   contentType?: string | null;
   errorName?: string;
   errorMessage?: string;
+  errorCode?: string;
+  causeName?: string;
+  causeMessage?: string;
+  causeCode?: string;
 }
 
 export class DblpUpstreamError extends Error {
@@ -36,9 +40,24 @@ export class DblpUpstreamError extends Error {
 }
 
 function errorDetails(error: unknown) {
-  return error instanceof Error
-    ? { errorName: error.name, errorMessage: error.message }
-    : { errorName: "UnknownError", errorMessage: String(error) };
+  if (!(error instanceof Error)) {
+    return { errorName: "UnknownError", errorMessage: String(error) };
+  }
+  const codedError = error as Error & { code?: unknown; cause?: unknown };
+  const cause = codedError.cause;
+  const codedCause = cause instanceof Error
+    ? cause as Error & { code?: unknown }
+    : undefined;
+  return {
+    errorName: error.name,
+    errorMessage: error.message,
+    ...(codedError.code !== undefined && { errorCode: String(codedError.code) }),
+    ...(codedCause && {
+      causeName: codedCause.name,
+      causeMessage: codedCause.message,
+      ...(codedCause.code !== undefined && { causeCode: String(codedCause.code) }),
+    }),
+  };
 }
 
 function retryDelayMs(value: string | null): number {
