@@ -80,8 +80,3 @@ export interface PublicationsResponse {
   lastChecked: string;
   debug?: { rawCount: number; filteredCount: number; excludedCount: number };
 }
-
-export interface ApiError {
-  success: false;
-  error: string;
-}

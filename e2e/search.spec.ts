@@ -95,6 +95,9 @@ test("search and analysis use browser-side DBLP JSONP", async ({ page }) => {
   await expect(page.getByText("Selected scholar", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "James C. Lester" })).toBeVisible();
   await expect(page.getByText("A Browser-Side DBLP Result.", { exact: true })).toBeVisible();
+  expect(await page.locator('script[src*="dblp.org/search/"]').count()).toBe(0);
+  expect(await page.evaluate(() => Object.keys(window).filter((key) => key.startsWith("__dblpJsonp_"))))
+    .toEqual([]);
   expect(consoleErrors).toEqual([]);
 });
 

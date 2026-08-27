@@ -1,29 +1,9 @@
-import type { Author, DeduplicationResult, DuplicateReason, Publication, PublicationStats, PublicationType } from "@/types";
+import type { Author, DeduplicationResult, DuplicateReason, Publication, PublicationStats } from "@/types";
 import { normalizeAuthorName, normalizePid } from "@/lib/scholar-identity";
-
-type XmlAuthor = string | { "#text"?: string; "@_pid"?: string };
 
 export function asArray<T>(value: T | T[] | undefined | null): T[] {
   if (value === undefined || value === null) return [];
   return Array.isArray(value) ? value : [value];
-}
-
-export function textValue(value: unknown): string {
-  if (typeof value === "string" || typeof value === "number") return String(value);
-  if (value && typeof value === "object" && "#text" in value) {
-    const text = (value as { "#text"?: unknown })["#text"];
-    return typeof text === "string" || typeof text === "number" ? String(text) : "";
-  }
-  return "";
-}
-
-export function normalizeAuthors(value: XmlAuthor | XmlAuthor[] | undefined): Author[] {
-  return asArray(value)
-    .map((author) => {
-      if (typeof author === "string") return { name: author };
-      return { name: textValue(author), pid: author["@_pid"] };
-    })
-    .filter((author) => author.name.length > 0);
 }
 
 export function calculateStats(publications: Publication[]): PublicationStats {
@@ -43,12 +23,6 @@ export function calculateStats(publications: Publication[]): PublicationStats {
     conferenceFirstAuthor,
     totalPapers: journalPapers + conferencePapers,
   };
-}
-
-export function classifyRecordType(recordType: string): PublicationType | null {
-  if (recordType === "article") return "Journal";
-  if (recordType === "inproceedings") return "Conference";
-  return null;
 }
 
 export function normalizeDoi(doi?: string): string | undefined {

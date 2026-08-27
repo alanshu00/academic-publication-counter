@@ -77,6 +77,12 @@ describe("DBLP JSONP normalization", () => {
     }]);
   });
 
+  it("reports a DBLP rate-limit status distinctly", () => {
+    expect(() => parseAuthorSearchResponse({
+      result: { status: { "@code": "429" }, hits: { "@total": "0" } },
+    })).toThrow("DBLP rate limited this request.");
+  });
+
   it("normalizes both object and array author shapes", () => {
     expect(normalizeSearchApiAuthors({ text: "Jörg Test", "@pid": "j/1" }))
       .toEqual([{ name: "Jörg Test", pid: "j/1" }]);
